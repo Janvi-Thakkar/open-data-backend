@@ -1,51 +1,59 @@
 const mongoose = require('mongoose');
 
-var contact = new mongoose.Schema({
+
+
+const data = new mongoose.Schema({
+    link: {
+        type: String,
+    },
+    file: {
+        type: String
+    },
+    title: {
+        type: String,
+    },
+    desc: {
+        type: String,
+    },
+    keywords: {
+        type: String,
+    },
+    category: {
+        type: String,
+    },
+    license: {
+        type: String,
+    },
+    comment: {
+        type: String,
+    },
+    date: {
+        type:String
+    }
+
+}
+)
+const Register = new mongoose.Schema({
     name: {
         type: String,
         required: true
     },
-    mobile: {
+    email: {
+        type: String,
+        required: true,
+        unique:true
+    },
+    org: {
         type: String,
         required: true
     },
-    email: {
-        type: String,
-        required: true
-    },
-    
-    
-    
-});
-const Register = new mongoose.Schema({
-    mobile: {
-        type: String,
-       required: true,
-        unique: true
-    },
-    email: {
-        type: String,
-       required: true
-    },
-    password: {
-        type: String,
-       required: true
-
-    },
-     name: {
-         type: String,
-        reuired:true
-    },
-    contacts: [contact]
-    
-       
-        
-    },
-
-                                            
-
+    data: [data]
+},
     { collection: 'UserData' }
 )
+
+
+
 
 const model = mongoose.model("UserData", Register);
 module.exports = model;
