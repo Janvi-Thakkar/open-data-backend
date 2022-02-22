@@ -164,32 +164,30 @@ app.post('/api/addFileData', upload.single('file'), (req, res) => {
     res.status(200).json({ status: "ok", code: 200, result:req.file.id })
 });
 
-//app.get('/api/files', (req, res) => {
 
-//        //gfs.collection('uploads').find().toArray((err, files) => {
-//        //    if (!files || files.length === 0) {
-//        //        return res.status(200).json({
-//        //            success: false,
-//        //            message: 'No files available'
-//        //        });
-//        //    }
+app.get('/api/users', async (req, res) => {
 
-//        //    files.map(file => {
-//     const readStream = gridfsBucket.openDownloadStream(mongoose.Types.ObjectId(req.query.id));
-//    readStream.pipe(res);
-//    console.log(readStream);
-
-//        //    });
-
-
-
-
-//        //});
-//})
+    user.find({}).then(result => {
+        res.status(200).json({ status: "ok", code: 200, result: result });
+    }).catch(error => {
+        res.status(401).json({ status: "error", code: 401, error: error });
+    })
+   
+})
 
 
 
 app.get('/api/files', (req, res) => {
+    conn.once('open', () => {
+        // Init stream
+        gfs = Grid(conn.db, mongoose.mongo);
+        gfs.collection('uploads');
+
+        gridfsBucket = new mongoose.mongo.GridFSBucket(conn.db, {
+            bucketName: 'uploads'
+        });
+    })
+
     gfs.collection('uploads').findOne({ _id: mongoose.Types.ObjectId(req.query.id) }, function (err, file) {
     if (err) {
         return res.status(400).send(err);
@@ -208,11 +206,16 @@ app.get('/api/files', (req, res) => {
             'Content-Type': mimeType,
             'Content-Disposition': 'attachment; filename=' + file.filename
         });
+        console.log(file)
         var readstream = gridfsBucket.openDownloadStream(mongoose.Types.ObjectId(req.query.id));
 
     readstream.on("error", function (err) {
         res.end();
     });
+     
     readstream.pipe(res);
 });
 })
+
+
+
