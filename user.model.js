@@ -28,9 +28,11 @@ const data = new mongoose.Schema({
         type: String,
     },
     date: {
+        type: String
+    },
+    id:{
         type:String
     }
-
 }
 )
 const Register = new mongoose.Schema({

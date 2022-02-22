@@ -12,6 +12,7 @@ const { GridFsStorage } = require('multer-gridfs-storage');
 const Grid = require('gridfs-stream');
 const methodOverride = require('method-override');
 const conn = mongoose.createConnection(connection_url);
+Grid.mongo = mongoose.mongo;
 
 // TO AVOID CORS POLICY ERRORS
 app.use(cors());
@@ -76,82 +77,142 @@ app.post('/api/signin', async (req, res) => {
 
 })
 
-
+let gridfsBucket;
+let gfs;
 conn.once('open', () => {
     // Init stream
     gfs = Grid(conn.db, mongoose.mongo);
     gfs.collection('uploads');
-});
 
-// Create storage engine
-const storage = new GridFsStorage({
-    url: connection_url,
-    file: (req, file) => {
-        return new Promise((resolve, reject) => {
-            const filename = file.originalname;
-            const fileInfo = {
-                filename: filename,
-                bucketName: 'uploads'
-            };
-            resolve(fileInfo);
-        });
-    }
-});
+    gridfsBucket = new mongoose.mongo.GridFSBucket(conn.db, {
+        bucketName: 'uploads'
+    });
+} )
 
-const upload = multer({ storage });
+    // Create storage engine
+    const storage = new GridFsStorage({
+        url: connection_url,
+        file: (req, file) => {
+            return new Promise((resolve, reject) => {
+                const filename = file.originalname;
+                const fileInfo = {
+                    filename: filename,
+                    bucketName: 'uploads'
+                };
+                resolve(fileInfo);
+            });
+        }
+    });
+
+    const upload = multer({ storage });
 
 
-app.patch('/api/addData', async (req, res) => {
+    app.patch('/api/addData', async (req, res) => {
 
-    if (req.body.type == 'link') {
-        user.updateOne({ email: req.body.email }, {
-            $push: {
-                data: {
-                    link: req.body.url,
-                    title: req.body.title,
-                    desc: req.body.desc,
-                    keywords: req.body.keys,
-                    category: req.body.cate,
-                    license: req.body.license,
-                    comment: req.body.comment,
-                    date:req.body.date,
-                    file: req.body.file
+        if (req.body.type == 'link') {
+            user.updateOne({ email: req.body.email }, {
+                $push: {
+                    data: {
+                        link: req.body.url,
+                        title: req.body.title,
+                        desc: req.body.desc,
+                        keywords: req.body.keys,
+                        category: req.body.cate,
+                        license: req.body.license,
+                        comment: req.body.comment,
+                        date: req.body.date,
+                        file: req.body.file,
+                        id: req.body.id
+                    }
                 }
-            }
-        }).then(result => {
-            console.log(result)
-            res.status(200).json({ status: "ok", code: 200, result: result });
+            }).then(result => {
+                console.log(result)
+                res.status(200).json({ status: "ok", code: 200, result: result });
 
-        }).catch(error => {
+            }).catch(error => {
 
-            res.status(401).json({ status: "error", code: 401, error: error });
-        })
-    }
-    else {
-        user.updateOne({ email: req.body.email }, {
-            $push: {
-                data: {
-                    link: req.body.url,
-                    title: req.body.title,
-                    desc: req.body.desc,
-                    keywords: req.body.keys,
-                    category: req.body.cate,
-                    license: req.body.license,
-                    comment: req.body.comment,
-                    date: req.body.date,
-                    file: req.body.file
+                res.status(401).json({ status: "error", code: 401, error: error });
+            })
+        }
+        else {
+            user.updateOne({ email: req.body.email }, {
+                $push: {
+                    data: {
+                        link: req.body.url,
+                        title: req.body.title,
+                        desc: req.body.desc,
+                        keywords: req.body.keys,
+                        category: req.body.cate,
+                        license: req.body.license,
+                        comment: req.body.comment,
+                        date: req.body.date,
+                        file: req.body.file,
+                        id:req.body.id
+                    }
                 }
-            }
-        }).then(result => {
-            res.status(200).json({ status: "ok", code: 200, result: result });
-        }).catch(error => {
-            res.status(401).json({ status: "error", code: 401, error: error });
-        })
-    }
+            }).then(result => {
+                res.status(200).json({ status: "ok", code: 200, result: result });
+            }).catch(error => {
+                res.status(401).json({ status: "error", code: 401, error: error });
+            })
+        }
 
-})
+    })
 
 
 app.post('/api/addFileData', upload.single('file'), (req, res) => {
-    res.status(200).json({ status: "ok", code: 200, result: JSON.stringify({}) });
+    res.status(200).json({ status: "ok", code: 200, result:req.file.id })
 });
+
+//app.get('/api/files', (req, res) => {
+
+//        //gfs.collection('uploads').find().toArray((err, files) => {
+//        //    if (!files || files.length === 0) {
+//        //        return res.status(200).json({
+//        //            success: false,
+//        //            message: 'No files available'
+//        //        });
+//        //    }
+
+//        //    files.map(file => {
+//     const readStream = gridfsBucket.openDownloadStream(mongoose.Types.ObjectId(req.query.id));
+//    readStream.pipe(res);
+//    console.log(readStream);
+
+//        //    });
+
+
+
+
+//        //});
+//})
+
+
+
+app.get('/api/files', (req, res) => {
+    gfs.collection('uploads').findOne({ _id: mongoose.Types.ObjectId(req.query.id) }, function (err, file) {
+    if (err) {
+        return res.status(400).send(err);
+    }
+    else if (!file) {
+        return res.status(404).send('Error on the database looking for the file.');
+    }
+
+    //res.set('Content-Type', file.contentType);
+    //res.set('Content-Disposition', 'attachment; filename="' + file.filename + '"');
+        let mimeType = file.contentType;
+        if (!mimeType) {
+            mimeType = mime.lookup(file.filename);
+        }
+        res.set({
+            'Content-Type': mimeType,
+            'Content-Disposition': 'attachment; filename=' + file.filename
+        });
+        var readstream = gridfsBucket.openDownloadStream(mongoose.Types.ObjectId(req.query.id));
+
+    readstream.on("error", function (err) {
+        res.end();
+    });
+    readstream.pipe(res);
+});
+})
