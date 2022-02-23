@@ -122,7 +122,8 @@ conn.once('open', () => {
                         comment: req.body.comment,
                         date: req.body.date,
                         file: req.body.file,
-                        id: req.body.id
+                        id: req.body.id,
+                        type:req.body.type
                     }
                 }
             }).then(result => {
@@ -147,7 +148,8 @@ conn.once('open', () => {
                         comment: req.body.comment,
                         date: req.body.date,
                         file: req.body.file,
-                        id:req.body.id
+                        id: req.body.id,
+                        type: req.body.type
                     }
                 }
             }).then(result => {

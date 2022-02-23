@@ -1,7 +1,5 @@
 const mongoose = require('mongoose');
 
-
-
 const data = new mongoose.Schema({
     link: {
         type: String,
@@ -31,6 +29,9 @@ const data = new mongoose.Schema({
         type: String
     },
     id:{
+        type:String
+    },
+    type: {
         type:String
     }
 }
